@@ -1,0 +1,1 @@
+idf_component_register(INCLUDE_DIRS "include" REQUIRES cyberboat_types esp_common)

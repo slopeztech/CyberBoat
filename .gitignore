@@ -1,0 +1,45 @@
+# PlatformIO build output
+.pio/
+
+# ESP-IDF generated dependencies, build output, and machine-local configuration
+managed_components/
+build/
+cmake-build-*/
+sdkconfig
+sdkconfig.*
+!sdkconfig.defaults
+!sdkconfig.*.defaults
+sdkconfig.old
+
+# Local editor state
+.vscode/
+.idea/
+
+# Generated documentation and coverage output
+html/
+latex/
+coverage/
+
+# Local records and CAD exports not required to build firmware
+/logs/
+/3D/
+/3d/
+
+# Compiled firmware and native build artifacts
+*.bin
+*.elf
+*.hex
+*.map
+*.o
+*.a
+*.d
+
+# Operating-system and editor temporary files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.bak
+__pycache__/
+.pytest_cache/

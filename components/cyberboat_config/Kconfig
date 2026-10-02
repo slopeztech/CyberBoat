@@ -1,0 +1,600 @@
+menu "CyberBoat configuration"
+
+choice CYBERBOAT_VESSEL_MODE
+    prompt "Vessel behavior mode"
+    default CYBERBOAT_MODE_SINGLE_MOTOR_ONLY
+
+config CYBERBOAT_MODE_SINGLE_MOTOR_ONLY
+    bool "1 motor, no servos"
+
+config CYBERBOAT_MODE_SINGLE_MOTOR_RUDDER
+    bool "1 motor + rudder servo"
+
+config CYBERBOAT_MODE_SINGLE_MOTOR_AUX_SERVO
+    bool "1 motor + auxiliary servo actuator"
+
+config CYBERBOAT_MODE_SINGLE_MOTOR_RUDDER_AUX
+    bool "1 motor + rudder servo + auxiliary servo actuator"
+
+config CYBERBOAT_MODE_TWIN_MOTOR_ONLY
+    bool "2 differential motors, no servos"
+
+config CYBERBOAT_MODE_TWIN_MOTOR_RUDDER
+    bool "2 differential motors + rudder servo"
+
+config CYBERBOAT_MODE_TWIN_MOTOR_AUX_SERVO
+    bool "2 differential motors + auxiliary servo actuator"
+
+config CYBERBOAT_MODE_TWIN_MOTOR_RUDDER_AUX
+    bool "2 differential motors + rudder servo + auxiliary servo actuator"
+
+endchoice
+
+config CYBERBOAT_MOTOR_COUNT
+    int
+    range 1 2
+    default 2 if CYBERBOAT_MODE_TWIN_MOTOR_ONLY
+    default 2 if CYBERBOAT_MODE_TWIN_MOTOR_RUDDER
+    default 2 if CYBERBOAT_MODE_TWIN_MOTOR_AUX_SERVO
+    default 2 if CYBERBOAT_MODE_TWIN_MOTOR_RUDDER_AUX
+    default 1
+
+config CYBERBOAT_RUDDER_SERVO_ENABLED
+    bool
+    default y if CYBERBOAT_MODE_SINGLE_MOTOR_RUDDER
+    default y if CYBERBOAT_MODE_SINGLE_MOTOR_RUDDER_AUX
+    default y if CYBERBOAT_MODE_TWIN_MOTOR_RUDDER
+    default y if CYBERBOAT_MODE_TWIN_MOTOR_RUDDER_AUX
+    default n
+
+config CYBERBOAT_AUX_SERVO_ENABLED
+    bool
+    default y if CYBERBOAT_MODE_SINGLE_MOTOR_AUX_SERVO
+    default y if CYBERBOAT_MODE_SINGLE_MOTOR_RUDDER_AUX
+    default y if CYBERBOAT_MODE_TWIN_MOTOR_AUX_SERVO
+    default y if CYBERBOAT_MODE_TWIN_MOTOR_RUDDER_AUX
+    default n
+
+config CYBERBOAT_SERVO_ENABLED
+    bool
+    default y if CYBERBOAT_RUDDER_SERVO_ENABLED
+    default y if CYBERBOAT_AUX_SERVO_ENABLED
+    default n
+
+config CYBERBOAT_ACTUATORS_ENABLED
+    bool "Enable actuator outputs (motors and servos)"
+    depends on !CYBERBOAT_RUN_UNIT_TESTS
+    default n
+    help
+        Keep disabled until actuator wiring, power, and safe-stop behavior are validated.
+
+config CYBERBOAT_RUN_UNIT_TESTS
+    bool "Repeat pure component unit tests in the test profile"
+    default n
+    help
+        Use the dedicated unit-test PlatformIO environment. Tests must not initialize actuator hardware.
+
+config CYBERBOAT_RUN_HARDWARE_TESTS
+    bool "Run an interactive hardware diagnostic instead of the boat application"
+    depends on !CYBERBOAT_RUN_UNIT_TESTS
+    default n
+    help
+        Select a dedicated receiver or servo diagnostic. The servo diagnostic requires
+        CYBERBOAT_ACTUATORS_ENABLED and never initializes the motor driver.
+
+choice CYBERBOAT_HARDWARE_TEST_COMPONENT
+    prompt "Hardware diagnostic component"
+    depends on CYBERBOAT_RUN_HARDWARE_TESTS
+    default CYBERBOAT_HARDWARE_TEST_SERVO
+
+config CYBERBOAT_HARDWARE_TEST_SERVO
+    bool "Servo output"
+
+config CYBERBOAT_HARDWARE_TEST_PWM_RECEIVER
+    bool "PWM receiver input monitor"
+
+config CYBERBOAT_HARDWARE_TEST_HBRIDGE
+    bool "Two-motor H-bridge inputs D0-D3"
+    depends on CYBERBOAT_MOTOR_COUNT = 2
+
+endchoice
+
+choice CYBERBOAT_HARDWARE_TEST_SERVO_ROLE
+    prompt "Servo role to test"
+    depends on CYBERBOAT_RUN_HARDWARE_TESTS && CYBERBOAT_HARDWARE_TEST_SERVO
+    default CYBERBOAT_HARDWARE_TEST_SERVO_AUXILIARY
+
+config CYBERBOAT_HARDWARE_TEST_SERVO_RUDDER
+    bool "Rudder"
+
+config CYBERBOAT_HARDWARE_TEST_SERVO_AUXILIARY
+    bool "Auxiliary"
+
+endchoice
+
+choice CYBERBOAT_HARDWARE_TEST_SERVO_MODE
+    prompt "Servo output test mode"
+    depends on CYBERBOAT_RUN_HARDWARE_TESTS && CYBERBOAT_HARDWARE_TEST_SERVO
+    default CYBERBOAT_HARDWARE_TEST_SERVO_CENTER
+
+config CYBERBOAT_HARDWARE_TEST_SERVO_CENTER
+    bool "Hold center pulse for oscilloscope"
+
+config CYBERBOAT_HARDWARE_TEST_SERVO_SMALL_STEPS
+    bool "Small +/-5% position steps"
+
+endchoice
+
+config CYBERBOAT_MOTOR_1_IN1_GPIO
+    int "Motor 1 bridge input 1 GPIO"
+    range 0 48
+    default 3
+    help
+        Connect to the bridge IN1/logic input, not the motor output terminal.
+        GPIO3 is an ESP32-S3 strapping pin. Ensure the bridge input does not bias it
+        to an incompatible level during reset; use another GPIO if uncertain.
+
+config CYBERBOAT_MOTOR_1_IN2_GPIO
+    int "Motor 1 bridge input 2 GPIO"
+    range 0 48
+    default 4
+    help
+        Connect to the bridge IN2/logic input, not the motor output terminal.
+
+config CYBERBOAT_MOTOR_1_REVERSED
+    bool "Reverse motor 1 direction"
+    default n
+
+if CYBERBOAT_MOTOR_COUNT = 2
+
+config CYBERBOAT_MOTOR_2_IN1_GPIO
+    int "Motor 2 bridge input 1 GPIO"
+    range 0 48
+    default 5
+    help
+        Connect to the bridge IN3/logic input for motor 2.
+
+config CYBERBOAT_MOTOR_2_IN2_GPIO
+    int "Motor 2 bridge input 2 GPIO"
+    range 0 48
+    default 6
+    help
+        Connect to the bridge IN4/logic input for motor 2.
+
+config CYBERBOAT_MOTOR_2_REVERSED
+    bool "Reverse motor 2 direction"
+    default n
+
+endif
+
+config CYBERBOAT_MOTOR_PWM_FREQUENCY_HZ
+    int "H-bridge PWM frequency (Hz)"
+    range 100 20000
+    default 1000
+
+config CYBERBOAT_MOTOR_LEDC_TIMER
+    int "H-bridge LEDC timer"
+    range 0 3
+    default 1
+
+config CYBERBOAT_MOTOR_LEDC_CHANNEL_BASE
+    int "H-bridge first LEDC channel"
+    range 0 7
+    default 4
+
+config CYBERBOAT_RUDDER_SERVO_GPIO
+    int "Rudder servo PWM GPIO"
+    range 0 48
+    default 18
+    help
+        GPIO connected to the rudder servo signal input.
+
+config CYBERBOAT_AUX_SERVO_GPIO
+    int "Auxiliary servo PWM GPIO"
+    range 0 48
+    default 13
+    help
+        GPIO connected to the independent auxiliary servo signal input.
+        Avoid GPIO19 and GPIO20 while the native USB Serial/JTAG console is enabled.
+
+config CYBERBOAT_RUDDER_SERVO_FREQUENCY_HZ
+    int "Rudder servo PWM frequency (Hz)"
+    range 40 333
+    default 50
+
+config CYBERBOAT_RUDDER_SERVO_MIN_PULSE_US
+    int "Rudder servo minimum calibrated pulse width (us)"
+    range 400 2500
+    default 500
+
+config CYBERBOAT_RUDDER_SERVO_CENTER_PULSE_US
+    int "Rudder servo center pulse width (us)"
+    range 400 2500
+    default 1500
+
+config CYBERBOAT_RUDDER_SERVO_MAX_PULSE_US
+    int "Rudder servo maximum calibrated pulse width (us)"
+    range 500 3000
+    default 2500
+
+config CYBERBOAT_RUDDER_SERVO_LEDC_TIMER
+    int "Rudder servo LEDC timer"
+    range 0 3
+    default 0
+
+config CYBERBOAT_RUDDER_SERVO_LEDC_CHANNEL
+    int "Rudder servo LEDC channel"
+    range 0 7
+    default 0
+
+config CYBERBOAT_AUX_SERVO_FREQUENCY_HZ
+    int "Auxiliary servo PWM frequency (Hz)"
+    range 40 333
+    default 50
+
+config CYBERBOAT_AUX_SERVO_MIN_PULSE_US
+    int "Auxiliary servo minimum calibrated pulse width (us)"
+    range 400 2500
+    default 500
+
+config CYBERBOAT_AUX_SERVO_CENTER_PULSE_US
+    int "Auxiliary servo center pulse width (us)"
+    range 400 2500
+    default 1500
+
+config CYBERBOAT_AUX_SERVO_MAX_PULSE_US
+    int "Auxiliary servo maximum calibrated pulse width (us)"
+    range 500 3000
+    default 2500
+
+config CYBERBOAT_AUX_SERVO_LEDC_TIMER
+    int "Auxiliary servo LEDC timer"
+    range 0 3
+    default 2
+
+config CYBERBOAT_AUX_SERVO_LEDC_CHANNEL
+    int "Auxiliary servo LEDC channel"
+    range 0 7
+    default 1
+
+config CYBERBOAT_GPS_ENABLED
+    bool "Enable GPS receiver"
+    default n
+
+config CYBERBOAT_PWM_RECEIVER_CHANNEL_COUNT
+    int "PWM receiver channel count"
+    range 1 8
+    default 4
+    help
+        Maximum number of independent PWM outputs captured from a hobby RC receiver.
+
+config CYBERBOAT_PWM_RECEIVER_CH1_GPIO
+    int "PWM receiver channel 1 GPIO"
+    range 0 48
+    default 7
+
+config CYBERBOAT_PWM_RECEIVER_CH2_GPIO
+    int "PWM receiver channel 2 GPIO"
+    range 0 48
+    default 8
+
+config CYBERBOAT_PWM_RECEIVER_CH3_GPIO
+    int "PWM receiver channel 3 GPIO"
+    range 0 48
+    default 9
+
+config CYBERBOAT_PWM_RECEIVER_CH4_GPIO
+    int "PWM receiver channel 4 GPIO"
+    range 0 48
+    default 10
+
+if CYBERBOAT_PWM_RECEIVER_CHANNEL_COUNT >= 5
+
+config CYBERBOAT_PWM_RECEIVER_CH5_GPIO
+    int "PWM receiver channel 5 GPIO"
+    range 0 48
+    default 12
+
+endif
+
+if CYBERBOAT_PWM_RECEIVER_CHANNEL_COUNT >= 6
+
+config CYBERBOAT_PWM_RECEIVER_CH6_GPIO
+    int "PWM receiver channel 6 GPIO"
+    range 0 48
+    default 13
+
+endif
+
+if CYBERBOAT_PWM_RECEIVER_CHANNEL_COUNT >= 7
+
+config CYBERBOAT_PWM_RECEIVER_CH7_GPIO
+    int "PWM receiver channel 7 GPIO"
+    range 0 48
+    default 14
+
+endif
+
+if CYBERBOAT_PWM_RECEIVER_CHANNEL_COUNT >= 8
+
+config CYBERBOAT_PWM_RECEIVER_CH8_GPIO
+    int "PWM receiver channel 8 GPIO"
+    range 0 48
+    default 15
+
+endif
+
+config CYBERBOAT_PWM_RECEIVER_MIN_PULSE_US
+    int "Minimum accepted receiver pulse (us)"
+    range 500 1500
+    default 900
+
+config CYBERBOAT_PWM_RECEIVER_MAX_PULSE_US
+    int "Maximum accepted receiver pulse (us)"
+    range 1500 3000
+    default 2100
+
+config CYBERBOAT_PWM_RECEIVER_TIMEOUT_MS
+    int "Receiver channel timeout (ms)"
+    range 20 1000
+    default 100
+
+config CYBERBOAT_RECEIVER_CONSOLE_LOG
+    bool "Log receiver channel and mapped command data to console"
+    default n
+    help
+        Prints raw channel pulse widths/ages and the mapped throttle, steering,
+        auxiliary servo, and arm request to the serial console at a configurable
+        interval. Useful for bring-up with FlySky FS-R6B and similar generic
+        individual-channel PWM receivers. Disable for normal operation to reduce
+        log noise.
+
+config CYBERBOAT_RECEIVER_CONSOLE_LOG_INTERVAL_MS
+    int "Receiver console log interval (ms)"
+    range 50 5000
+    default 500
+    depends on CYBERBOAT_RECEIVER_CONSOLE_LOG
+    help
+        Minimum time between receiver console log lines when logging is enabled.
+
+config CYBERBOAT_RC_THROTTLE_CHANNEL
+    int "Throttle source channel (zero based)"
+    range 0 7
+    default 1
+
+config CYBERBOAT_RC_STEERING_CHANNEL
+    int "Steering source channel (zero based)"
+    range 0 7
+    default 0
+
+config CYBERBOAT_RC_THROTTLE_REVERSED
+    bool "Reverse throttle mapping"
+    default n
+
+config CYBERBOAT_RC_THROTTLE_BIDIRECTIONAL
+    bool "Map throttle around its center for forward/reverse"
+    default n
+    help
+        Leave disabled for a self-centering-free throttle stick that only requests forward power.
+
+config CYBERBOAT_RC_STEERING_REVERSED
+    bool "Reverse steering mapping"
+    default n
+
+config CYBERBOAT_RC_AUX_SERVO_CHANNEL
+    int "Auxiliary servo source channel (zero based)"
+    range 0 7
+    default 3
+
+config CYBERBOAT_RC_AUX_SERVO_REVERSED
+    bool "Reverse auxiliary servo mapping"
+    default n
+
+config CYBERBOAT_RC_ARM_ENABLED
+    bool "Map an auxiliary channel to an arming request"
+    default n
+
+config CYBERBOAT_RC_ARM_CHANNEL
+    int "Arming source channel (zero based)"
+    range 0 7
+    default 2
+
+config CYBERBOAT_RC_ARM_THRESHOLD_US
+    int "Arming pulse threshold (us)"
+    range 900 2100
+    default 1500
+
+config CYBERBOAT_RC_THROTTLE_MIN_US
+    int "Throttle minimum pulse (us)"
+    range 500 1500
+    default 1000
+
+config CYBERBOAT_RC_THROTTLE_CENTER_US
+    int "Throttle center pulse (us)"
+    range 1000 2000
+    default 1500
+
+config CYBERBOAT_RC_THROTTLE_MAX_US
+    int "Throttle maximum pulse (us)"
+    range 1500 3000
+    default 2000
+
+config CYBERBOAT_RC_STEERING_MIN_US
+    int "Steering minimum pulse (us)"
+    range 500 1500
+    default 1000
+
+config CYBERBOAT_RC_STEERING_CENTER_US
+    int "Steering center pulse (us)"
+    range 1000 2000
+    default 1500
+
+config CYBERBOAT_RC_STEERING_MAX_US
+    int "Steering maximum pulse (us)"
+    range 1500 3000
+    default 2000
+
+config CYBERBOAT_RC_AUX_SERVO_MIN_US
+    int "Auxiliary servo minimum pulse (us)"
+    range 500 1500
+    default 1000
+
+config CYBERBOAT_RC_AUX_SERVO_CENTER_US
+    int "Auxiliary servo center pulse (us)"
+    range 1000 2000
+    default 1500
+
+config CYBERBOAT_RC_AUX_SERVO_MAX_US
+    int "Auxiliary servo maximum pulse (us)"
+    range 1500 3000
+    default 2000
+
+config CYBERBOAT_RC_DEADBAND_US
+    int "RC axis center deadband (us)"
+    range 0 200
+    default 30
+
+menu "Four-channel differential drive mapping"
+
+config CYBERBOAT_RC_DRIVE_SERVO_CHANNEL
+    int "Auxiliary servo channel (zero based)"
+    range 0 7
+    default 0
+
+config CYBERBOAT_RC_DRIVE_THROTTLE_CHANNEL
+    int "Motor power channel (zero based)"
+    range 0 7
+    default 1
+
+config CYBERBOAT_RC_DRIVE_DIRECTION_CHANNEL
+    int "Forward/reverse speed channel (zero based)"
+    range 0 7
+    default 2
+
+config CYBERBOAT_RC_DRIVE_STEERING_CHANNEL
+    int "Differential steering channel (zero based)"
+    range 0 7
+    default 3
+
+config CYBERBOAT_RC_DRIVE_LEFT_MOTOR_INDEX
+    int "H-bridge motor index installed on the left (0=motor 1, 1=motor 2)"
+    range 0 1
+    default 0
+    help
+        Select which H-bridge motor output is physically on the left. Index 0
+        is motor 1 on IN1/IN2 (D0/D1); index 1 is motor 2 on IN3/IN4 (D2/D3).
+        The other output is treated as the right motor.
+
+config CYBERBOAT_RC_DRIVE_DEADBAND_US
+    int "Drive channel deadband (us)"
+    range 0 200
+    default 30
+
+config CYBERBOAT_RC_DRIVE_SERVO_TRAVEL_PERCENT
+    int "Auxiliary servo travel (% of calibrated range)"
+    range 1 100
+    default 50
+    help
+        50 percent uses half of the configured servo calibration span. With a
+        500-2500 us calibration representing 180 degrees, this produces a
+        nominal 90-degree end-to-end sweep. Verify the servo datasheet and
+        calibrate its pulse limits before connecting the linkage.
+
+config CYBERBOAT_RC_DRIVE_SERVO_REVERSED
+    bool "Reverse auxiliary servo sweep"
+    default n
+
+config CYBERBOAT_RC_DRIVE_DIRECTION_REVERSED
+    bool "Reverse forward and reverse positions"
+    default n
+
+config CYBERBOAT_RC_DRIVE_STEERING_REVERSED
+    bool "Reverse differential steering"
+    default n
+
+config CYBERBOAT_RC_DRIVE_SERVO_MIN_US
+    int "Servo channel left pulse (us)"
+    range 500 1500
+    default 976
+
+config CYBERBOAT_RC_DRIVE_SERVO_CENTER_US
+    int "Servo channel center pulse (us)"
+    range 1000 2000
+    default 1492
+
+config CYBERBOAT_RC_DRIVE_SERVO_MAX_US
+    int "Servo channel right pulse (us)"
+    range 1500 3000
+    default 1933
+
+config CYBERBOAT_RC_DRIVE_THROTTLE_MIN_US
+    int "Throttle stop pulse (us)"
+    range 500 1500
+    default 1056
+
+config CYBERBOAT_RC_DRIVE_THROTTLE_CENTER_US
+    int "Throttle calibration midpoint (us)"
+    range 1000 2000
+    default 1377
+
+config CYBERBOAT_RC_DRIVE_THROTTLE_MAX_US
+    int "Throttle full-power pulse (us)"
+    range 1500 3000
+    default 1698
+
+config CYBERBOAT_RC_DRIVE_DIRECTION_MIN_US
+    int "Full reverse speed pulse (us)"
+    range 500 1500
+    default 1096
+
+config CYBERBOAT_RC_DRIVE_DIRECTION_CENTER_US
+    int "Zero-speed/neutral pulse (us)"
+    range 1000 2000
+    default 1472
+
+config CYBERBOAT_RC_DRIVE_DIRECTION_MAX_US
+    int "Full forward speed pulse (us)"
+    range 1500 3000
+    default 1924
+
+config CYBERBOAT_RC_DRIVE_STEERING_MIN_US
+    int "Steering left pulse (us)"
+    range 500 1500
+    default 993
+
+config CYBERBOAT_RC_DRIVE_STEERING_CENTER_US
+    int "Steering center pulse (us)"
+    range 1000 2000
+    default 1508
+
+config CYBERBOAT_RC_DRIVE_STEERING_MAX_US
+    int "Steering right pulse (us)"
+    range 1500 3000
+    default 1950
+
+endmenu
+
+choice CYBERBOAT_RECEIVER_TYPE
+    prompt "RC receiver transport"
+    default CYBERBOAT_RECEIVER_PWM
+
+config CYBERBOAT_RECEIVER_SBUS
+    bool "SBUS or serial RC receiver"
+
+config CYBERBOAT_RECEIVER_PWM
+    bool "PWM channel receiver"
+
+config CYBERBOAT_RECEIVER_NRF24
+    bool "nRF24L01 link"
+
+config CYBERBOAT_RECEIVER_WIFI
+    bool "Wi-Fi link"
+
+endchoice
+
+config CYBERBOAT_STATUS_LED_GPIO
+    int "Status LED GPIO"
+    range 0 48
+    default 21
+
+endmenu
