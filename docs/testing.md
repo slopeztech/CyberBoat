@@ -5,8 +5,8 @@
 | Layer | Verification | Status |
 | --- | --- | --- |
 | Production build | `platformio run -e esp32-s3-zero` with strict project-owned C warnings | Passed cleanly; twin-motor + auxiliary-servo profile selected. |
-| Unity build | `platformio run -e esp32-s3-zero-unit-tests` | Passed; 56 tests compile, including proportional CH2 x CH3 speed scaling. |
-| Unity on target | Mode/control, H-bridge, role-aware servo, PWM receiver, receiver mapping, receiver drive mapping, receiver console logging, and hardware-test sequencing | 38 earlier tests passed on target; current 56-test image builds, but the new receiver-drive cases and recent debug tests have not been run on target. |
+| Unity build | `platformio run -e esp32-s3-zero-unit-tests` | Last known successful build had 56 tests; a full-travel servo mapping test was added afterward. |
+| Unity on target | Mode/control, H-bridge, role-aware servo, PWM receiver, receiver mapping, receiver drive mapping, receiver console logging, and hardware-test sequencing | 38 earlier tests passed on target; current 57-test build has not completed after the servo-range test was added. |
 | Hardware-test runtime | `esp32-s3-zero-hardware-tests`, auxiliary role on GPIO13, small-step mode | Previously uploaded on COM8; serial log confirmed repeated 1500/1450/1550 us commands. It is no longer the active firmware. Visual shaft movement and oscilloscope waveform remain unverified. |
 | H-bridge test build | `esp32-s3-zero-hbridge-tests`, twin-motor D0-D3 sequence | Build passed after explicit component-dependency fix; not uploaded or run with motors/bridge. |
 | PWM receiver capture | Unity tests for channel count, reserved USB/actuator GPIO conflicts, HAL binding, and uninitialized reads | Passed on ESP32-S3-Zero: 4 tests, 0 failures. |
@@ -19,7 +19,7 @@
 | PWM receiver hardware | Receiver pulse levels, channel order, timeout, and FS-T4B/FS-R6B operation | Live capture verified on GPIO7-10: all four channels reported valid with `invalid_pulses=0`. Exact receiver model, measured signal voltage, and control-direction calibration remain unverified. |
 | Receiver/GPS/motor system | End-to-end command flow, link loss, and failsafe | Pending. |
 
-The 56 Unity cases cover vessel mode and topology-aware mixing (3), H-bridge mapping/safety (9), role-aware servo mapping/configuration and actuator gating (9), PWM receiver GPIO/binding (4), legacy receiver mapping (10), new receiver-drive mapping (10), hardware-test sequencing (4), and receiver console-logging rate limiter/formatters (7). Production and Unity builds pass; the new receiver-drive tests have not been run on target. Pure tests do not initialize actuator outputs. No H-bridge oscilloscope waveform has been recorded.
+The 57 Unity cases cover vessel mode and topology-aware mixing (3), H-bridge mapping/safety (9), role-aware servo mapping/configuration and actuator gating (9), PWM receiver GPIO/binding (4), legacy receiver mapping (10), new receiver-drive mapping (11), hardware-test sequencing (4), and receiver console-logging rate limiter/formatters (7). The new servo-travel test and receiver-drive tests have not been run on target. Pure tests do not initialize actuator outputs. No H-bridge oscilloscope waveform has been recorded.
 
 For safe probing of receiver inputs, servo PWM, or dedicated D0-D3 motor-test pulses, follow the [Oscilloscope Test Guide](oscilloscope-testing.md). The normal drive image is now uploaded with the actuator gate enabled for propeller-free testing; the dedicated H-bridge ramp image was not uploaded.
 

@@ -91,6 +91,23 @@ static void test_receiver_drive_maps_forward_throttle_and_right_turn(void)
     TEST_ASSERT_EQUAL_UINT32(95U, command.valid_for_ms);
 }
 
+static void test_receiver_drive_servo_uses_full_calibrated_travel_at_100_percent(void)
+{
+    cb_receiver_drive_config_t config = get_drive_config();
+    cb_receiver_raw_frame_t raw = get_neutral_frame();
+    cb_receiver_drive_command_t command = {};
+
+    config.servo_travel_percent = 100U;
+    raw.pulse_width_us[0] = config.servo.min_pulse_us;
+
+    TEST_ASSERT_EQUAL(ESP_OK, cb_receiver_drive_map(&raw, &config, &command));
+    TEST_ASSERT_EQUAL_INT16(-CB_AXIS_MAX, command.auxiliary_servo);
+
+    raw.pulse_width_us[0] = config.servo.max_pulse_us;
+    TEST_ASSERT_EQUAL(ESP_OK, cb_receiver_drive_map(&raw, &config, &command));
+    TEST_ASSERT_EQUAL_INT16(CB_AXIS_MAX, command.auxiliary_servo);
+}
+
 static void test_receiver_drive_maps_reverse_and_left_turn(void)
 {
     cb_receiver_drive_config_t config = get_drive_config();
@@ -235,6 +252,7 @@ void cb_receiver_drive_run_unit_tests(void)
     UNITY_BEGIN();
     RUN_TEST(test_receiver_drive_rejects_null_and_invalid_config);
     RUN_TEST(test_receiver_drive_maps_forward_throttle_and_right_turn);
+    RUN_TEST(test_receiver_drive_servo_uses_full_calibrated_travel_at_100_percent);
     RUN_TEST(test_receiver_drive_maps_reverse_and_left_turn);
     RUN_TEST(test_receiver_drive_multiplies_throttle_by_signed_direction_axis);
     RUN_TEST(test_receiver_drive_swaps_physical_left_motor_assignment);

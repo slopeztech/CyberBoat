@@ -53,7 +53,7 @@ platformio run -e esp32-s3-zero-unit-tests -t upload --upload-port COM8
 platformio device monitor -p COM8 -b 115200
 ```
 
-Replace `COM8` with the serial port assigned by your system. The Unity profile leaves actuator outputs disabled. The project currently compiles 56 Unity tests; mapping tests do not prove electrical or mechanical behavior.
+Replace `COM8` with the serial port assigned by your system. The Unity profile leaves actuator outputs disabled. The project currently compiles 57 Unity tests; mapping tests do not prove electrical or mechanical behavior.
 
 Configure vessel mode, channel calibration, GPIOs, motor side, and polarity with:
 

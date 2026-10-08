@@ -493,12 +493,13 @@ config CYBERBOAT_RC_DRIVE_DEADBAND_US
 config CYBERBOAT_RC_DRIVE_SERVO_TRAVEL_PERCENT
     int "Auxiliary servo travel (% of calibrated range)"
     range 1 100
-    default 50
+    default 100
     help
-        50 percent uses half of the configured servo calibration span. With a
-        500-2500 us calibration representing 180 degrees, this produces a
-        nominal 90-degree end-to-end sweep. Verify the servo datasheet and
-        calibrate its pulse limits before connecting the linkage.
+        Scales the commanded position relative to the configured servo pulse
+        calibration. At 100 percent the full minimum-to-maximum pulse span is
+        used; at 50 percent only half that span is used. The angle depends on
+        the servo model. Verify its datasheet and calibrate pulse limits before
+        connecting the linkage.
 
 config CYBERBOAT_RC_DRIVE_SERVO_REVERSED
     bool "Reverse auxiliary servo sweep"
